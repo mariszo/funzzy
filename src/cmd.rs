@@ -1,5 +1,7 @@
 use std::process::Command;
 use std::error::Error;
+use std::process::*;
+use super::*;
 
 fn command_parser(command: String) -> Vec<Command> {
     let mut commands = vec![];
@@ -13,6 +15,19 @@ fn command_parser(command: String) -> Vec<Command> {
             "&&" => {
                 commands.push(command);
                 command = Command::new(tokens.remove(0));
+            },
+            "||" => {
+                let spawn = command.stdout(Stdio::piped())
+                                   .spawn()
+                                   .expect("Error");
+                match spawn {
+                    Some(child) => {
+                        command = Command::new(tokens.remove(0));
+                        command.stdin(child.stdout);
+                        commands.push(command);
+                    },
+                    None => {}
+                }
             },
             _ => {
                 command.arg(token);
